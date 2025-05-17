@@ -365,8 +365,8 @@ To access your private GitHub repository:
 1. **Set Up PM2 Startup:**
    
    ```bash
-   pm2 startup
-   pm2 save
+   pm2 save &&
+   sudo pm2 startup
    ```
 
 ---
