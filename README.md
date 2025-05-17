@@ -1,5 +1,3 @@
-
-
 ## Complete Guide to Setting Up a Next.js Application on AWS EC2 with Nginx and SSL
 
 This guide provides step-by-step instructions to deploy a Next.js application on an AWS EC2 instance, configure Nginx as a reverse proxy, secure it with SSL using Certbot, and manage the application with PM2.
@@ -64,6 +62,7 @@ This guide provides step-by-step instructions to deploy a Next.js application on
      ```bash
      ssh -i keypair.pem ubuntu@99.98.97.96
      ```
+   
    - Ensure proper permissions:
      
      ```bash
@@ -97,6 +96,12 @@ This guide provides step-by-step instructions to deploy a Next.js application on
    
    ```bash
    sudo npm install pm2 -g
+   ```
+
+5. **Setup Swap:**
+   
+   ```bash
+   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile && sudo sed -i '2i/swapfile swap swap defaults 0 0 ' /etc/fstab && sudo sysctl vm.swappiness=10 && sudo sed -i '1ivm.swappiness=10 ' /etc/sysctl.conf && sudo timedatectl set-timezone Asia/Kolkata
    ```
 
 ---
@@ -141,7 +146,7 @@ To access your private GitHub repository:
 2. **Install Dependencies and Build:**
    
    ```bash
-   sudo yarn install
+   sudo yarn install --prefer-online
    sudo yarn build
    ```
 
@@ -233,8 +238,6 @@ To access your private GitHub repository:
    upstream nextjs_upstream_3000 {
     server 127.0.0.1:3000;
    }
-
-
    server {
     listen      80;
     server_name www.domain.com;
@@ -244,9 +247,8 @@ To access your private GitHub repository:
     add_header X-XSS-Protection           "1; mode=block"                              always;
     add_header Referrer-Policy            "strict-origin-when-cross-origin"            always;
     add_header Content-Security-Policy      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'self';" always;
-    
     client_max_body_size 10m;
-    
+   
     proxy_set_header Upgrade             $http_upgrade;
     proxy_set_header Connection          "upgrade";
     proxy_set_header Host                $host;
@@ -254,21 +256,21 @@ To access your private GitHub repository:
     proxy_set_header X-Forwarded-For     $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto   $scheme;
     proxy_cache_bypass  $http_upgrade;
-    
+   
     access_log /var/log/nginx/nextjs-app.access.log;
     error_log /var/log/nginx/nextjs-app.error.log;
-    
+   
     location / {
         proxy_pass              http://nextjs_upstream_3000;
         proxy_buffer_size       128k;
         proxy_buffers           4 256k;
         proxy_busy_buffers_size 256k;
     }
-    
+   
     location ~ /\.(ht|git) {
         deny all;
     }
-    
+   
     gzip              on;
     gzip_comp_level   6;
     gzip_types
@@ -295,7 +297,7 @@ To access your private GitHub repository:
         video/mp4
         video/webm
         video/ogg;
-    
+   
     brotli            on;
     brotli_comp_level 6;
     brotli_types
@@ -323,13 +325,12 @@ To access your private GitHub repository:
         video/webm
         video/ogg
         application/octet-stream;
-
+   
    }
-
    ```
 
-
 3. **Link to Sites-Enabled:**
+   
    ```
    sudo ln -s /etc/nginx/sites-available/www.domain.com.conf /etc/nginx/sites-enabled/
    ```
@@ -342,6 +343,7 @@ To access your private GitHub repository:
    ```
 
 ---
+
 ### Step 10: Install SSL with Certbot
 
 1. **Run Certbot:**
@@ -365,13 +367,15 @@ To access your private GitHub repository:
 1. **Set Up PM2 Startup:**
    
    ```bash
-   pm2 save &&
+   sudo pm2 save
    sudo pm2 startup
    ```
 
 ---
 
 ### Extra Notes
+
+---
 
 - **Environment Variables:**
   
@@ -392,6 +396,7 @@ To access your private GitHub repository:
   - List processes: `pm2 ls`
   - Monitor: `pm2 monit`
   - View logs: `pm2 logs nextjs-app`
+  - View last 100 lines: `pm2 logs nextjs-app --lines 100`
   - Stop all: `pm2 stop all`
   - Delete all: `pm2 delete all`
   - Stop specific: `pm2 stop <id>`
@@ -405,16 +410,76 @@ To access your private GitHub repository:
   - `Ctrl + K`: Cut selection.
   - `Alt + 6`: Copy selection.
 
-- **Recreate Nginx Config:**
+- **System Configuration:**
   
-  - If needed:
+  - **Recreate Nginx Config:**
     
     ```bash
     sudo rm /etc/nginx/sites-available/www.domain.com.conf
-    sudo rm /etc/nginx/sites-enabled/www.domain.com.conf
+    sudo rm /etc/nginx/sites-enabled/jobs.domain.com.conf
     sudo nano /etc/nginx/sites-available/www.domain.com.conf
     sudo ln -s /etc/nginx/sites-available/www.domain.com.conf /etc/nginx/sites-enabled/
     sudo systemctl reload nginx
     sudo nginx -t
     ```
 
+- **Resource Monitoring:**
+  
+  - **System Monitor:**
+    
+    ```bash
+    sudo apt-get install bpytop
+    bpytop
+    ```
+  
+  - **Storage Monitor:**
+    
+    ```bash
+    sudo apt install ncdu
+    cd / && ncdu
+    ```
+
+- **Environment Optimization:**
+  
+  - **Cleanup Node Modules:**
+    
+    ```bash
+    sudo npm install -g npkill
+    ```
+    
+    *OR*
+    
+    ```bash
+    sudo yarn global add npkill
+    ```
+    
+    ```bash
+    npkill
+    ```
+  
+  - **Yarn Process Improvement:**
+    
+    ```bash
+    sudo yarn config set enableGlobalCache false
+    sudo yarn install && sudo yarn cache clean && cd / && sudo rm -rf ~/.cache/yarn
+    sudo yarn install --prefer-online
+    ```
+
+- **Version Control:**
+  
+  - **Git Notes:**
+    
+    ```bash
+    
+    git log
+    git remote -v
+    git remote remove <remote-name>
+    git remote add <remote-name> <remote-url>
+
+    git add .
+    git commit -m "message"
+    git commit -a -m "commit"
+    git push origin main
+    ```
+
+---
